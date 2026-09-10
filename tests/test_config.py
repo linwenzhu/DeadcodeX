@@ -8,7 +8,7 @@ from textwrap import dedent
 
 import pytest
 
-from vulture.config import (
+from deadcodex.config import (
     DEFAULTS,
     InputError,
     _check_input_config,
@@ -30,23 +30,39 @@ def test_cli_args():
     Ensure that CLI arguments are converted to a config object.
     """
     expected = dict(
+        baseline="baseline.json",
         paths=["path1", "path2"],
+        entry_point_decorators=["router.*"],
+        entry_points=["app", "worker.run"],
         exclude=["file*.py", "dir/"],
+        frameworks=["flask", "fastapi"],
         ignore_decorators=["deco1", "deco2"],
         ignore_names=["name1", "name2"],
         config="pyproject.toml",
         make_whitelist=True,
         min_confidence=10,
+        output="report.txt",
+        output_format="text",
         sort_by_size=True,
+        update_baseline=True,
         verbose=True,
     )
     result = _parse_args(
         [
+            "--baseline=baseline.json",
+            "--update-baseline",
+            "--entry-point-decorator=router.*",
+            "--entry-point=app",
+            "--entry-point=worker.run",
             "--exclude=file*.py,dir/",
+            "--framework=flask",
+            "--framework=fastapi",
             "--ignore-decorators=deco1,deco2",
             "--ignore-names=name1,name2",
             "--make-whitelist",
             "--min-confidence=10",
+            "--format=text",
+            "--output=report.txt",
             "--sort-by-size",
             "--verbose",
             "path1",
@@ -62,25 +78,39 @@ def test_toml_config():
     Ensure parsing of TOML files results in a valid config object.
     """
     expected = dict(
+        baseline="baseline.json",
         paths=["path1", "path2"],
+        entry_point_decorators=["router.*"],
+        entry_points=["app.main"],
         exclude=["file*.py", "dir/"],
+        frameworks=["fastapi"],
         ignore_decorators=["deco1", "deco2"],
         ignore_names=["name1", "name2"],
         make_whitelist=True,
         min_confidence=10,
+        output="report.txt",
+        output_format="text",
         sort_by_size=True,
+        update_baseline=True,
         verbose=True,
     )
     data = get_toml_bytes(
         dedent(
             """\
-        [tool.vulture]
+        [tool.deadcodex]
+        baseline = "baseline.json"
+        entry_point_decorators = ["router.*"]
+        entry_points = ["app.main"]
         exclude = ["file*.py", "dir/"]
+        frameworks = ["fastapi"]
         ignore_decorators = ["deco1", "deco2"]
         ignore_names = ["name1", "name2"]
         make_whitelist = true
         min_confidence = 10
+        output = "report.txt"
+        output_format = "text"
         sort_by_size = true
+        update_baseline = true
         verbose = true
         paths = ["path1", "path2"]
         """
@@ -113,7 +143,7 @@ def test_toml_config_with_heterogenous_array():
         # comment for good measure
         problem_array = [{a = 1}, [2,3,4], "foo"]
 
-        [tool.vulture]
+        [tool.deadcodex]
         exclude = ["file*.py", "dir/"]
         ignore_decorators = ["deco1", "deco2"]
         ignore_names = ["name1", "name2"]
@@ -138,38 +168,57 @@ def test_config_merging():
     toml = get_toml_bytes(
         dedent(
             """\
-        [tool.vulture]
+        [tool.deadcodex]
+        baseline = "toml-baseline.json"
+        entry_point_decorators = ["toml.*"]
+        entry_points = ["toml.main"]
         exclude = ["toml_exclude"]
+        frameworks = ["flask"]
         ignore_decorators = ["toml_deco"]
         ignore_names = ["toml_name"]
         make_whitelist = false
         min_confidence = 10
         sort_by_size = false
+        update_baseline = false
         verbose = false
         paths = ["toml_path"]
         """
         )
     )
     cliargs = [
+        "--baseline=cli-baseline.json",
+        "--update-baseline",
+        "--entry-point-decorator=cli.*",
+        "--entry-point=cli.main",
         "--exclude=cli_exclude",
+        "--framework=fastapi",
         "--ignore-decorators=cli_deco",
         "--ignore-names=cli_name",
         "--make-whitelist",
         "--min-confidence=20",
+        "--format=text",
+        "--output=cli.txt",
         "--sort-by-size",
         "--verbose",
         "cli_path",
     ]
     result = make_config(cliargs, toml)
     expected = dict(
+        baseline="cli-baseline.json",
         paths=["cli_path"],
+        entry_point_decorators=["cli.*"],
+        entry_points=["cli.main"],
         exclude=["cli_exclude"],
+        frameworks=["fastapi"],
         ignore_decorators=["cli_deco"],
         ignore_names=["cli_name"],
         config="pyproject.toml",
         make_whitelist=True,
         min_confidence=20,
+        output="cli.txt",
+        output_format="text",
         sort_by_size=True,
+        update_baseline=True,
         verbose=True,
     )
     assert result == expected
@@ -200,7 +249,7 @@ def test_config_merging_missing():
     toml = get_toml_bytes(
         dedent(
             """\
-        [tool.vulture]
+        [tool.deadcodex]
         verbose = true
         ignore_names = ["name1"]
         """
@@ -222,7 +271,7 @@ def test_config_merging_toml_paths_only():
     toml = get_toml_bytes(
         dedent(
             """\
-        [tool.vulture]
+        [tool.deadcodex]
         paths = ["path1", "path2"]
         """
         )
@@ -262,3 +311,24 @@ def test_missing_paths():
     """
     with pytest.raises(InputError):
         make_config([])
+
+
+def test_json_output_config_and_whitelist_validation():
+    config = make_config(["--format=json", "module.py"])
+
+    assert config["output_format"] == "json"
+    assert config["output"] == ""
+
+    with pytest.raises(InputError, match="Whitelist output"):
+        make_config(["--make-whitelist", "--format=json", "module.py"])
+    with pytest.raises(InputError, match="requires --baseline"):
+        make_config(["--update-baseline", "module.py"])
+
+
+def test_rejects_unknown_framework_in_toml():
+    toml = get_toml_bytes(
+        '[tool.deadcodex]\npaths = ["module.py"]\nframeworks = ["django"]\n'
+    )
+
+    with pytest.raises(InputError, match="Unknown framework adapter"):
+        make_config([], toml)

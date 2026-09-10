@@ -1,6 +1,6 @@
 import ast
 
-from vulture import utils
+from deadcodex import utils
 
 from . import v
 

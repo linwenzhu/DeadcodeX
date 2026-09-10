@@ -1,6 +1,6 @@
 import codecs
 
-from vulture.utils import ExitCode
+from deadcodex.utils import ExitCode
 
 from . import v
 

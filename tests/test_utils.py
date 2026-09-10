@@ -4,7 +4,7 @@ import pathlib
 
 import pytest
 
-from vulture import utils
+from deadcodex import utils
 
 
 class TestFormatPath:

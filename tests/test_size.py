@@ -3,7 +3,7 @@ import sys
 
 import pytest
 
-from vulture import lines
+from deadcodex import lines
 
 
 def count_lines(node):

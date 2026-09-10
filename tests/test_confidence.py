@@ -1,10 +1,10 @@
-from vulture import core
+from deadcodex import core
 
 dc = core.DEFAULT_CONFIDENCE
 
 
 def check_min_confidence(code, min_confidence, expected):
-    v = core.Vulture(verbose=True)
+    v = core.DeadCodex(verbose=True)
     v.scan(code)
     detected = {
         item.name: item.confidence

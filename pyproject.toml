@@ -3,9 +3,9 @@ requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "vulture"
+name = "deadcodex"
 dynamic = ["version"]
-description = "Find dead code"
+description = "Project-aware dead code analysis for Python"
 readme = { file = "README.md", content-type = "text/markdown" }
 keywords = ["dead code removal"]
 requires-python = ">=3.9"
@@ -34,25 +34,21 @@ dependencies = [
   "tomli >= 1.1.0; python_version < '3.11'",
 ]
 
-[project.urls]
-Homepage = "https://github.com/jendrikseipp/vulture"
-Repository = "https://github.com/jendrikseipp/vulture"
-Changelog = "https://github.com/jendrikseipp/vulture/blob/main/CHANGELOG.md"
-
 [project.scripts]
-vulture = "vulture.core:main"
+deadcodex = "deadcodex.core:main"
 
 [tool.setuptools]
 include-package-data = true
 
 [tool.setuptools.packages.find]
+include = ["deadcodex*"]
 exclude = ["tests", "tests.*"]
 
 [tool.setuptools.package-data]
-vulture = ["whitelists/*.py"]
+deadcodex = ["whitelists/*.py"]
 
 [tool.setuptools.dynamic]
-version = { attr = "vulture.version.__version__" }
+version = { attr = "deadcodex.version.__version__" }
 
 [tool.ruff]
 exclude = [
@@ -62,7 +58,7 @@ exclude = [
   "build",
   "dist",
   "htmlcov",
-  "vulture.egg-info",
+  "*.egg-info",
   ".cache",
   ".coverage",
   ".pytest_cache",
@@ -104,7 +100,8 @@ unfixable = []
 dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
 
 [tool.ruff.lint.per-file-ignores]
-"vulture/whitelists/*.py" = ["B018"]
+"deadcodex/whitelists/*.py" = ["B018"]
+"examples/**/*.py" = ["F401", "RUF102"]
 
 [tool.ruff.format]
 # Like Black, use double quotes for strings.
@@ -138,4 +135,4 @@ omit = [".tox/*"]
 parallel = true
 
 [tool.pytest.ini_options]
-addopts = "--cov vulture --cov-report=html --cov-report=term --cov-report=xml --cov-append"
+addopts = "--cov deadcodex --cov-report=html --cov-report=term --cov-report=xml"

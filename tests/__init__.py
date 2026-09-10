@@ -4,20 +4,20 @@ import sys
 
 import pytest
 
-from vulture import core
+from deadcodex import core
 
 REPO = pathlib.Path(__file__).resolve().parents[1]
 WHITELISTS = [
     str(path)
-    for path in (REPO / "vulture" / "whitelists").glob("*.py")
+    for path in (REPO / "deadcodex" / "whitelists").glob("*.py")
     # Pint is incompatible with Python 3.13 (https://github.com/hgrecco/pint/issues/1969).
     if sys.version_info < (3, 13) or path.name != "pint_whitelist.py"
 ]
 
 
-def call_vulture(args, **kwargs):
+def call_deadcodex(args, **kwargs):
     return subprocess.call(
-        [sys.executable, "-m", "vulture", *args], cwd=REPO, **kwargs
+        [sys.executable, "-m", "deadcodex", *args], cwd=REPO, **kwargs
     )
 
 
@@ -49,4 +49,4 @@ def check_multiple_unreachable(v, checks):
 
 @pytest.fixture
 def v():
-    return core.Vulture(verbose=True)
+    return core.DeadCodex(verbose=True)

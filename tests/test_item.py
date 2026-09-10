@@ -93,7 +93,7 @@ Foo()
 
 
 def test_item_variable(v):
-    v.scan("v = 'Vulture'")
+    v.scan("v = 'DeadCodex'")
     assert len(v.unused_vars) == 1
     var = v.unused_vars[0]
     assert var.name == "v"

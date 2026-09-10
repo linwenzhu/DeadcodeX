@@ -1,10 +1,10 @@
-from vulture import core
+from deadcodex import core
 
 from . import check
 
 
 def check_ignore(code, ignore_names, ignore_decorators, expected):
-    v = core.Vulture(
+    v = core.DeadCodex(
         verbose=True,
         ignore_names=ignore_names,
         ignore_decorators=ignore_decorators,

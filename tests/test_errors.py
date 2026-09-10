@@ -1,8 +1,8 @@
 import pytest
 
-from vulture.utils import ExitCode
+from deadcodex.utils import ExitCode
 
-from . import call_vulture, v
+from . import call_deadcodex, v
 
 assert v  # Silence pyflakes.
 
@@ -30,6 +30,6 @@ def foo():
 
 def test_invalid_cmdline_args():
     assert (
-        call_vulture(["vulture/", "--invalid-argument"])
+        call_deadcodex(["deadcodex/", "--invalid-argument"])
         == ExitCode.InvalidCmdlineArguments
     )

@@ -1,47 +1,76 @@
-# Vulture - Find dead code
+# DeadCodex - Find dead code
 
-[![PyPI Version](https://img.shields.io/pypi/v/vulture.svg)](https://pypi.python.org/pypi/vulture)
-[![Conda Version](https://img.shields.io/conda/vn/conda-forge/vulture.svg)](https://anaconda.org/conda-forge/vulture)
-![CI:Test](https://github.com/jendrikseipp/vulture/workflows/CI/badge.svg)
-[![Codecov Badge](https://codecov.io/gh/jendrikseipp/vulture/branch/main/graphs/badge.svg)](https://codecov.io/gh/jendrikseipp/vulture?branch=main)
+DeadCodex 1.0 is a project-aware static-analysis tool built from Vulture 2.16.
+The distribution, Python package, public API and command-line name all use
+`deadcodex`.
 
-Vulture finds unused code in Python programs. This is useful for
-cleaning up and finding errors in large code bases. If you run Vulture
+DeadCodex finds unused code in Python programs. This is useful for
+cleaning up and finding errors in large code bases. If you run DeadCodex
 on both your library and test suite you can find untested code.
 
-Due to Python's dynamic nature, static code analyzers like Vulture are
+Due to Python's dynamic nature, static code analyzers like DeadCodex are
 likely to miss some dead code. Also, code that is only called implicitly
-may be reported as unused. Nonetheless, Vulture can be a very helpful
+may be reported as unused. Nonetheless, DeadCodex can be a very helpful
 tool for higher code quality.
 
 ## Features
 
 * fast: uses static code analysis
-* tested: tests itself and has complete test coverage
+* extensively tested with unit, integration, CLI and wheel-install tests
 * complements pyflakes and has the same output syntax
 * sorts unused classes and functions by size with `--sort-by-size`
+* resolves common imports and project-local calls by qualified name
+* supports Flask and FastAPI entry points
+* produces console, JSON and standalone HTML reports
+* stores known findings in a versioned baseline
 
 ## Installation
 
-    $ pip install vulture
+    $ pip install .
 
 ## Usage
 
-    $ vulture myscript.py  # or
-    $ python3 -m vulture myscript.py
-    $ vulture myscript.py mypackage/
-    $ vulture myscript.py --min-confidence 100  # Only report 100% dead code.
+    $ deadcodex myscript.py  # or
+    $ python3 -m deadcodex myscript.py
+    $ deadcodex myscript.py mypackage/
+    $ deadcodex myscript.py --min-confidence 100  # Only report 100% dead code.
+
+Experimental project-aware analysis starts from one or more qualified entry
+points and reports project callables that cannot be reached:
+
+    $ deadcodex mypackage/ --entry-point mypackage.cli.main
+    $ deadcodex mypackage/ --entry-point mypackage.cli.main --entry-point mypackage.worker.run
+    $ deadcodex mypackage/ --entry-point-decorator "router.*"
+    $ deadcodex mypackage/ --framework flask
+    $ deadcodex mypackage/ --framework fastapi
+
+Without either entry-point option, DeadCodex continues to use the inherited
+name-based algorithm. Explicit entry points must resolve to exactly one scanned
+module, class, function or method. Unresolved call names are handled
+conservatively.
+Decorator patterns are useful for framework-managed handlers such as
+`@router.get`; explicit and discovered entry points can be combined.
+
+Reports can be printed as JSON or written as a standalone HTML file:
+
+    $ deadcodex mypackage/ --format json
+    $ deadcodex mypackage/ --format html --output deadcodex-report.html
+
+To accept all current findings and report only new ones in later runs:
+
+    $ deadcodex mypackage/ --baseline deadcodex-baseline.json --update-baseline
+    $ deadcodex mypackage/ --baseline deadcodex-baseline.json
 
 The provided arguments may be Python files or directories. For each
-directory Vulture analyzes all contained
+directory DeadCodex analyzes all contained
 <span class="title-ref">\*.py</span> files.
 
-After you have found and deleted dead code, run Vulture again, because
+After you have found and deleted dead code, run DeadCodex again, because
 it may discover more dead code.
 
 ## Types of unused code
 
-In addition to finding unused functions, classes, etc., Vulture can detect
+In addition to finding unused functions, classes, etc., DeadCodex can detect
 unreachable code. Each chunk of dead code is assigned a *confidence value*
 between 60% and 100%, where a value of 100% signals that it is certain that the
 code won't be executed. Values below 100% are *very rough* estimates (based on
@@ -59,7 +88,7 @@ report code that is guaranteed to be unused within the analyzed files.
 
 ## Handling false positives
 
-When Vulture incorrectly reports chunks of code as unused, you have
+When DeadCodex incorrectly reports chunks of code as unused, you have
 several options for suppressing the false positives. If fixing your false
 positives could benefit other users as well, please file an issue report.
 
@@ -67,17 +96,17 @@ positives could benefit other users as well, please file an issue report.
 
 The recommended option is to add used code that is reported as unused to a
 Python module and add it to the list of scanned paths. To obtain such a
-whitelist automatically, pass `--make-whitelist` to Vulture:
+whitelist automatically, pass `--make-whitelist` to DeadCodex:
 
-    $ vulture mydir --make-whitelist > whitelist.py
-    $ vulture mydir whitelist.py
+    $ deadcodex mydir --make-whitelist > whitelist.py
+    $ deadcodex mydir whitelist.py
 
 Note that the resulting `whitelist.py` file will contain valid Python
 syntax, but for Python to be able to *run* it, you will usually have to
 make some modifications.
 
 We collect whitelists for common Python modules and packages in
-`vulture/whitelists/` (pull requests are welcome).
+`deadcodex/whitelists/`.
 
 #### Ignoring files
 
@@ -92,12 +121,12 @@ Another way of ignoring errors is to annotate the line causing the false
 positive with `# noqa: <ERROR_CODE>` in a trailing comment (e.g., `#
 noqa: V103`). The `ERROR_CODE` specifies what kind of dead code to
 ignore (see the table below for the list of error codes). In case no
-error code is specified, Vulture ignores all results for the line.
+error code is specified, DeadCodex ignores all results for the line.
 (Note that the line number for decorated objects is the line number of
 the first decorator.)
 -->
 
-For compatibility with [flake8](https://flake8.pycqa.org/), Vulture
+For compatibility with [flake8](https://flake8.pycqa.org/), DeadCodex
 supports the [F401 and
 F841](https://flake8.pycqa.org/en/latest/user/error-codes.html) error
 codes for ignoring unused imports (`# noqa: F401`) and unused local
@@ -107,19 +136,19 @@ make it harder to read.
 
 #### Ignoring names
 
-You can use `--ignore-names foo*,ba[rz]` to let Vulture ignore all names
+You can use `--ignore-names foo*,ba[rz]` to let DeadCodex ignore all names
 starting with `foo` and the names `bar` and `baz`. Additionally, the
 `--ignore-decorators` option can be used to ignore the names of functions
 decorated with the given decorator (but not their arguments or function body).
 This is helpful for example in Flask
 projects, where you can use `--ignore-decorators "@app.route"` to ignore all
-function names with the `@app.route` decorator. Note that Vulture simplifies
+function names with the `@app.route` decorator. Note that DeadCodex simplifies
 decorators it cannot parse: `@foo.bar(x, y)` becomes "@foo.bar" and
 `@foo.bar(x, y).baz` becomes "@" internally.
 
 We recommend using whitelists instead of `--ignore-names` or
 `--ignore-decorators` whenever possible, since whitelists are
-automatically checked for syntactic correctness when passed to Vulture
+automatically checked for syntactic correctness when passed to DeadCodex
 and often you can even pass them to your Python interpreter and let it
 check that all whitelisted code actually still exists in your project.
 
@@ -137,7 +166,7 @@ def foo(x, y):
     return x + 3
 ```
 
-Vulture will also ignore all variables that start with an underscore, so
+DeadCodex will also ignore all variables that start with an underscore, so
 you can use `_x, y = get_pos()` to mark unused tuple assignments or
 function arguments, e.g., `def foo(x, _y)`.
 
@@ -147,9 +176,9 @@ Raise the minimum [confidence value](#types-of-unused-code) with the `--min-conf
 
 #### Unreachable code
 
-If Vulture complains about code like `if False:`, you can use a Boolean
+If DeadCodex complains about code like `if False:`, you can use a Boolean
 flag `debug = False` and write `if debug:` instead. This makes the code
-more readable and silences Vulture.
+more readable and silences DeadCodex.
 
 #### Forward references for type annotations
 
@@ -167,8 +196,8 @@ def foo(arg: Sequence):
 ## Configuration
 
 You can also store command line arguments in `pyproject.toml` under the
-`tool.vulture` section. Simply remove leading dashes and replace all
-remaining dashes with underscores.
+`tool.deadcodex` section. Simply remove leading dashes and replace all remaining
+dashes with underscores.
 
 Options given on the command line have precedence over options in
 `pyproject.toml`.
@@ -176,70 +205,85 @@ Options given on the command line have precedence over options in
 Example Config:
 
 ``` toml
-[tool.vulture]
+[tool.deadcodex]
+baseline = "deadcodex-baseline.json"
+entry_point_decorators = ["router.*"]
+entry_points = ["mypackage.cli.main"]
 exclude = ["*file*.py", "dir/"]
+frameworks = ["fastapi"]
 ignore_decorators = ["@app.route", "@require_*"]
 ignore_names = ["visit_*", "do_*"]
-make_whitelist = true
+make_whitelist = false
 min_confidence = 80
+output = "deadcodex-report.json"
+output_format = "json"
 paths = ["myscript.py", "mydir", "whitelist.py"]
 sort_by_size = true
+update_baseline = false
 verbose = true
 ```
 
-Vulture will automatically look for a `pyproject.toml` in the current working directory.
+DeadCodex will automatically look for a `pyproject.toml` in the current working directory.
 
 To use a `pyproject.toml` in another directory, you can use the `--config path/to/pyproject.toml` flag.
 
 ## Integrations
 
-You can use a [pre-commit](https://pre-commit.com/#install) hook to run
-Vulture before each commit. For this, install pre-commit and add the
-following to the `.pre-commit-config.yaml` file in your repository:
+Use uv to synchronize the project and run the command in its managed
+environment:
 
-```yaml
-repos:
-  - repo: https://github.com/jendrikseipp/vulture
-    rev: 'v2.3'  # or any later Vulture version
-    hooks:
-      - id: vulture
+```console
+$ uv sync
+$ uv run deadcodex mypackage
 ```
 
-Then run `pre-commit install`. Finally, create a `pyproject.toml` file
-in your repository and specify all files that Vulture should check under
-`[tool.vulture] --> paths` (see above).
-
-There's also a [GitHub Action for Vulture](https://github.com/gtkacz/vulture-action),
-a [VS Code extension](https://marketplace.visualstudio.com/items?itemName=sebastienfi.dead-code-finder)
-and you can use Vulture programmatically. For example:
+DeadCodex can also be used programmatically:
 
 ``` python
-import vulture
+import deadcodex
 
-v = vulture.Vulture()
-v.scavenge(['.'])
+v = deadcodex.DeadCodex()
+v.scavenge(["."])
 unused_code = v.get_unused_code()  # returns a list of `Item` objects
+```
+
+Project entry points can also be supplied by an adapter:
+
+``` python
+from deadcodex import FastAPIAdapter, DeadCodex
+
+v = DeadCodex()
+v.scavenge(["mypackage"])
+adapter = FastAPIAdapter()
+unused_code = v.get_unused_code_project(
+    ["mypackage.cli.main"], entry_point_providers=[adapter]
+)
 ```
 
 ## How does it work?
 
-Vulture uses the `ast` module to build abstract syntax trees for all
+DeadCodex uses the `ast` module to build abstract syntax trees for all
 given files. While traversing all syntax trees it records the names of
 defined and used objects. Afterwards, it reports the objects which have
 been defined, but not used. This analysis ignores scopes and only takes
 object names into account.
 
-Vulture also detects unreachable code by looking for code after
+DeadCodex also detects unreachable code by looking for code after
 `return`, `break`, `continue` and `raise` statements, and by searching
 for unsatisfiable `if`- and `while`-conditions.
 
 ## Sort by size
 
-When using the `--sort-by-size` option, Vulture sorts unused code by its
+When using the `--sort-by-size` option, DeadCodex sorts unused code by its
 number of lines. This helps developers prioritize where to look for dead
 code first.
 
 ## Examples
+
+A complete runnable example suite is available in
+[`examples/README.md`](examples/README.md). It covers basic AST findings,
+cross-file resolution, call-graph reachability, Flask and FastAPI adapters,
+custom decorators, configuration, reports, baselines and the Python API.
 
 Consider the following Python script (`dead_code.py`):
 
@@ -263,7 +307,7 @@ if __name__ == "__main__":
 
 Calling :
 
-    $ vulture dead_code.py
+    $ deadcodex dead_code.py
 
 results in the following output:
 
@@ -271,7 +315,7 @@ results in the following output:
     dead_code.py:4: unused function 'greet' (60% confidence)
     dead_code.py:8: unused variable 'message' (60% confidence)
 
-Vulture correctly reports `os` and `message` as unused but it fails to
+DeadCodex correctly reports `os` and `message` as unused but it fails to
 detect that `greet` is actually used. The recommended method to deal
 with false positives like this is to create a whitelist Python file.
 
@@ -286,14 +330,14 @@ from dead_code import Greeter
 Greeter.greet
 ```
 
-Alternatively, you can pass `--make-whitelist` to Vulture and obtain an
+Alternatively, you can pass `--make-whitelist` to DeadCodex and obtain an
 automatically generated whitelist.
 
-Passing both the original program and the whitelist to Vulture
+Passing both the original program and the whitelist to DeadCodex
 
-    $ vulture dead_code.py whitelist_dead_code.py
+    $ deadcodex dead_code.py whitelist_dead_code.py
 
-makes Vulture ignore the `greet` method:
+makes DeadCodex ignore the `greet` method:
 
     dead_code.py:1: unused import 'os' (90% confidence)
     dead_code.py:8: unused variable 'message' (60% confidence)
@@ -311,7 +355,7 @@ class Greeter:  # noqa: V102
 
 ## Error codes
 
-For compatibility with [flake8](https://flake8.pycqa.org/), Vulture
+For compatibility with [flake8](https://flake8.pycqa.org/), DeadCodex
 supports the [F401 and
 F841](https://flake8.pycqa.org/en/latest/user/error-codes.html) error
 codes.
@@ -344,22 +388,23 @@ codes.
     and unused local variables (in addition to many other programmatic
     errors).
   - [coverage](https://pypi.org/project/coverage/) finds unused code
-    more reliably than Vulture, but requires all branches of the code to
+    more reliably than DeadCodex, but requires all branches of the code to
     actually be run.
   - [uncalled](https://pypi.org/project/uncalled/) finds dead code by
-    using the abstract syntax tree (like Vulture), regular expressions,
+    using the abstract syntax tree (like DeadCodex), regular expressions,
     or both.
   - [dead](https://pypi.org/project/dead/) finds dead code by using the
-    abstract syntax tree (like Vulture).
+    abstract syntax tree (like DeadCodex).
 
 ## Participate
 
-Please visit <https://github.com/jendrikseipp/vulture> to report any
-issues or to make pull requests.
+The refactored internal module boundaries are described in
+[docs/architecture.md](docs/architecture.md).
 
-  - Contributing guide:
-    [CONTRIBUTING.md](https://github.com/jendrikseipp/vulture/blob/main/CONTRIBUTING.md)
-  - Release notes:
-    [CHANGELOG.md](https://github.com/jendrikseipp/vulture/blob/main/CHANGELOG.md)
-  - Roadmap:
-    [TODO.md](https://github.com/jendrikseipp/vulture/blob/main/TODO.md)
+The balanced six-person ownership plan, including required code reading,
+tests, review pairs and acceptance criteria, is documented in
+[docs/team-workload-plan.md](docs/team-workload-plan.md).
+
+The project was derived from the open-source Vulture codebase. DeadCodex-specific
+architecture, delivery notes and development plans are maintained in this
+repository's `docs/` directory.
