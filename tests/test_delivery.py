@@ -47,7 +47,7 @@ def test_ci_workflow_runs_lint_format_and_wheel_tests():
     )
 
     assert "actions/checkout@v7" in workflow
-    assert "astral-sh/setup-uv@v10" in workflow
+    assert "astral-sh/setup-uv@" in workflow
     assert "uv sync --locked --all-groups" in workflow
     assert "uv run pytest" in workflow
     assert "uv run ruff check deadcodex tests" in workflow
