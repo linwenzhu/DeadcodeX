@@ -1,4 +1,24 @@
-# Contributing to Vulture
+# Contributing to DeadCodeX
+
+## Development with uv
+
+From the repository root, install the locked development environment:
+
+```bash
+uv sync --locked --all-groups --python 3.12
+uv run pytest
+uv run ruff check deadcodex tests
+uv run ruff format --check deadcodex tests
+uv run tox -e py
+```
+
+The `dev` dependency group includes the test, coverage and quality tools.
+Commit both `pyproject.toml` and `uv.lock` when changing dependencies.
+CI uses the same locked environment on Python 3.9, 3.11, 3.13 and 3.14.
+tox additionally builds and installs a wheel in an isolated test environment;
+its test dependencies are declared separately in `tox.ini`.
+
+The legacy pip/virtualenv instructions below remain available as an alternative.
 
 ## Creating and cloning a fork
 

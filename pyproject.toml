@@ -34,6 +34,17 @@ dependencies = [
   "tomli >= 1.1.0; python_version < '3.11'",
 ]
 
+[dependency-groups]
+dev = [
+  "coverage",
+  "pint",
+  "pytest",
+  "pytest-cov",
+  "ruff",
+  "tox",
+  "ty",
+]
+
 [project.scripts]
 deadcodex = "deadcodex.core:main"
 

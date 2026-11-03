@@ -47,10 +47,12 @@ def test_ci_workflow_runs_lint_format_and_wheel_tests():
     )
 
     assert "actions/checkout@v7" in workflow
-    assert "actions/setup-python@v7" in workflow
-    assert "ruff check deadcodex tests" in workflow
-    assert "ruff format --check deadcodex tests" in workflow
-    assert "tox -e py" in workflow
+    assert "astral-sh/setup-uv@v10" in workflow
+    assert "uv sync --locked --all-groups" in workflow
+    assert "uv run pytest" in workflow
+    assert "uv run ruff check deadcodex tests" in workflow
+    assert "uv run ruff format --check deadcodex tests" in workflow
+    assert "uv run tox -e py" in workflow
 
 
 def test_package_exposes_deadcodex_command():
